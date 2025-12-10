@@ -1,0 +1,8 @@
+streamlit
+firebase-admin
+torch
+langchain
+langgraph
+requests
+beautifulsoup4
+chromadb
