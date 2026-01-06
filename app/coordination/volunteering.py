@@ -34,11 +34,12 @@ def get_recommendations(user_info, hf_api_key):
     - Availability: {user_info.get('availability', 'N/A')}
 
     Based on this information and your knowledge of disaster-prone areas or ongoing relief efforts (you can use your internal knowledge if no specific tool data is available, but act as a coordination expert), provide recommendations focusing on areas in and around {location} within a {distance} mile radius.
-
+    
     Provide:
     1. Recommended areas of most concern/need of volunteer efforts.
     2. Specific donation needs in those areas.
     3. How the user's specific skills could be used.
+    4. Include Adresses and use most needed areas in the present, don't use the past
     
     Keep the response concise, structured with headers, and encouraging.
     """
