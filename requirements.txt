@@ -19,3 +19,4 @@ geopandas
 shapely
 pyogrio
 pydeck
+gdeltdoc

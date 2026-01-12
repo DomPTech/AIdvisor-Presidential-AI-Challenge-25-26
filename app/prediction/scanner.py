@@ -2,12 +2,8 @@ import streamlit as st
 import re
 import torch
 from transformers import pipeline
-from geopy.geocoders import Nominatim
-import time
-import ssl
-import certifi
-from geotext import GeoText
-from app.chatbot.tools.ddg_search import get_news_search
+# from app.chatbot.tools.ddg_search import get_news_search
+from gdeltdoc import GdeltDoc, Filters
 
 @st.cache_resource
 def get_classifier():
@@ -23,6 +19,7 @@ class DisasterScanner:
     def __init__(self):
         self.classifier = get_classifier()
         self.candidate_labels = ["Critical Disaster", "Moderate Warning", "General Information", "Not Disaster Related"]
+        self.gd = GdeltDoc()
         
     def get_severity_score(self, text):
         """
@@ -63,65 +60,63 @@ class DisasterScanner:
         return results
 
     def scan_bundle_news(self, bundle):
-        """
-        Searches news using location bundle data and returns an aggregated result.
-        """
-        city_name = bundle['cities'][0] if bundle['cities'] else ""
-        county_name = bundle['counties'][0] if bundle['counties'] else ""
-        state_name = bundle['state']
+        state = bundle.get('state', "")
+        cities = bundle.get('cities', [])[:2]
+
+        city_queries = [f'{city} {state}' for city in cities if city]
+
+        # fallback: if no cities, just search by state
+        if not city_queries and state:
+            keyword = f'"{state}"'
+        else:
+            keyword = " OR ".join(city_queries)
         
-        # Construct multiple queries for better coverage
-        queries = []
-        if city_name:
-            queries.append(f"disaster emergency alert {city_name}, {state_name}")
-        if county_name:
-            queries.append(f"disaster {county_name} County, {state_name}")
-        queries.append(f"disaster emergency alert {state_name}")
-        
+        keyword = keyword.replace("-", '"f-16"')
+
+        # Build the GDELT Filters object
+        filters = Filters(
+            keyword =keyword,
+            theme = "NATURAL_DISASTER",
+            timespan = "3w",
+            country = "US",
+            num_records = 3
+        )
+
         max_severity = 0
         top_text = "No disaster reports found."
-        location_found = f"{city_name or county_name or state_name}"
         
-        for query in queries[:2]: # Limit to top 2 queries for speed
-            try:
-                raw_news = get_news_search(query)
-                if "No recent results" in raw_news:
-                    continue
-                
-                texts = [line.strip() for line in raw_news.split("\n\n") if line.strip()]
-                results = self.scan_texts(texts)
-                
-                if results:
-                    local_max = max(r['severity'] for r in results)
-                    if local_max > max_severity:
-                        max_severity = local_max
-                        top_text = results[0]['text']
-                        break # Found something relevant
-            except Exception as e:
-                print(f"DEBUG: News scan error for {query}: {e}")
-        
-        return {
-            "severity": max_severity,
-            "text": top_text,
-            "location": location_found,
-            "cell": bundle['h3']
-        }
-
-    def scan_location_news(self, lat, lon):
-        """
-        Legacy method for backward compatibility.
-        """
-        # This would ideally call get_h3_location_bundles but we don't want cyclic imports
-        # For now, just a placeholder or a simple query
-        query = f"disaster emergency alert {lat}, {lon}"
         try:
-            raw_news = get_news_search(query)
-            texts = [line.strip() for line in raw_news.split("\n\n") if line.strip()]
-            results = self.scan_texts(texts)
-            if not results: return {"severity": 0, "text": "No news", "location": f"{lat}, {lon}"}
-            return {"severity": max(r['severity'] for r in results), "text": results[0]['text'], "location": f"{lat}, {lon}"}
-        except:
-            return {"severity": 0, "text": "Error", "location": f"{lat}, {lon}"}
+            articles = self.gd.article_search(filters)
+            
+            if articles.empty:
+                print("No articles found")
+                return self._empty_response(bundle)
+
+            # Process dataframe
+            for _, row in articles.iterrows():
+                # Perform your classification logic on row['title']
+                result = self.classify_severity(row['title']) 
+                
+                if result['severity'] > max_severity:
+                    max_severity = result['severity']
+                    top_text = f"{row['title']} (Source: {row['domain']})"
+
+        except Exception as e:
+            print(f"DEBUG: GDELT query string: {filters.query_string}")
+            print(f"DEBUG: GDELT scan error: {e}")
+            return self._empty_response(bundle)
+        
+        output = {
+            "severity": max_severity,
+            "location": ", ".join(bundle.get('cities', ["Unknown"])),
+            "text": top_text,
+            "cell": bundle.get('h3')
+        }
+        print("Found output: ", output)
+        return output
+
+    def _empty_response(self, bundle):
+        return {"severity": 0, "text": "No reports found.", "cell": bundle.get('h3')}
 
 if __name__ == "__main__":
     scanner = DisasterScanner()

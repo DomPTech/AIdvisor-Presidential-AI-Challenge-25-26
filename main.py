@@ -171,8 +171,10 @@ def create_pydeck_map(scan_results=None):
     view_state = pdk.ViewState(
         latitude=39.8283,
         longitude=-98.5795,
-        zoom=3.5,
-        pitch=30,
+        min_zoom=1,
+        max_zoom=4,
+        zoom=2,
+        pitch=30
     )
     
     return pdk.Deck(
@@ -509,25 +511,28 @@ def main():
         cache_valid = False
         if st.session_state.last_scan_time:
             time_since_scan = datetime.datetime.now() - st.session_state.last_scan_time
-            cache_valid = time_since_scan.total_seconds() < 1800  # 30 minutes = 1800 seconds
+            cache_valid = time_since_scan.total_seconds() < 10  # 30 minutes = 1800 seconds
             
             if cache_valid:
                 with st.sidebar:
                     st.divider()
-                    st.success("✅ Using cached scan data")
+                    st.success("Using cached scan data")
                     minutes_ago = int(time_since_scan.total_seconds() / 60)
                     st.caption(f"Last scanned {minutes_ago} minutes ago")
                     next_scan = 30 - minutes_ago
                     st.caption(f"Next scan in ~{next_scan} minutes")
-                    if st.button("🔄 Force Rescan Now"):
-                        st.session_state.scan_index = 0
-                        st.session_state.scan_results = []
-                        st.session_state.last_scan_time = None
-                        st.rerun()
+                    # if st.button("🔄 Force Rescan Now"):
+                    #     st.session_state.scan_index = 0
+                    #     st.session_state.scan_results = []
+                    #     st.session_state.last_scan_time = None
+                    #     cache_valid = False
+                    #     print("rerunning")
+                    #     st.rerun()
 
         # Automatic Background Scan (only if cache is invalid)
         if not cache_valid and st.session_state.scan_index < len(st.session_state.scan_queries):
             scanner = DisasterScanner()
+            print("scanning")
             
             with st.sidebar:
                 st.divider()

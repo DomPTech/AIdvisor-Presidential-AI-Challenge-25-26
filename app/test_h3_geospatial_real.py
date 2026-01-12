@@ -11,7 +11,7 @@ st.cache_data = lambda x: x
 import h3
 import geopandas as gpd
 from shapely.geometry import Point, Polygon
-from app.prediction.geospatial import get_h3_location_bundles
+from prediction.geospatial import get_h3_location_bundles
 
 def test_h3_bundles_real_data():
     # H3 index for Nashville, TN roughly
