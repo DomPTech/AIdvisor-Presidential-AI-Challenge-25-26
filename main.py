@@ -182,7 +182,12 @@ def create_pydeck_map(scan_results=None):
         initial_view_state=view_state,
         map_style=None,
         tooltip={
-            "text": "Severity: {weight}\nLocation: {name}\nDetails: {needs}"
+            "html": "<div>Severity: {weight}<br>Location: {name}<br>Details: {needs}</div>",
+            "style": {
+                "max-width": "200px",
+                "word-wrap": "break-word",
+                "white-space": "normal"
+            }
         }
     )
 
@@ -511,7 +516,7 @@ def main():
         cache_valid = False
         if st.session_state.last_scan_time:
             time_since_scan = datetime.datetime.now() - st.session_state.last_scan_time
-            cache_valid = time_since_scan.total_seconds() < 10  # 30 minutes = 1800 seconds
+            cache_valid = time_since_scan.total_seconds() < 1800  # 30 minutes = 1800 seconds
             
             if cache_valid:
                 with st.sidebar:
@@ -539,7 +544,7 @@ def main():
                 st.subheader("Background Scanning...")
                 progress_bar = st.progress(st.session_state.scan_index / len(st.session_state.scan_queries))
                 status_text = st.empty()
-                if st.button("⏹ Stop Scan"):
+                if st.button("Stop Scan"):
                     st.session_state.scan_index = len(st.session_state.scan_queries)
                     st.rerun()
 
@@ -557,7 +562,7 @@ def main():
                 else:
                     status_text.text(f"Cell: {q_item['bundle']['h3']}")
                     cell_res = scanner.scan_bundle_news(q_item['bundle'])
-                    if cell_res['severity'] > 0:
+                    if cell_res['severity'] >= 0:
                         st.session_state.scan_results.append(cell_res)
                 
                 # Update state and progress
