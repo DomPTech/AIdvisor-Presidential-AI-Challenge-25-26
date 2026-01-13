@@ -8,7 +8,7 @@ def get_volunteer_opportunities():
     """
     return ["Opportunity 1", "Opportunity 2"]
 
-def get_recommendations(user_info, hf_api_key, hf_model_id="deepseek-ai/DeepSeek-R1"):
+def get_recommendations(user_info, hf_api_key, hf_model_id="deepseek/deepseek-v3.2", hf_max_tokens=500):
     """
     Get AI-driven volunteer and donation recommendations based on user info.
     """
@@ -20,7 +20,7 @@ def get_recommendations(user_info, hf_api_key, hf_model_id="deepseek-ai/DeepSeek
         "get_fema_disaster_declarations": get_fema_disaster_declarations,
         "get_fema_assistance_data": get_fema_assistance_data
     }
-    agent = DisasterAgent(model_id=hf_model_id, api_token=hf_api_key, tools=tools)
+    agent = DisasterAgent(model_id=hf_model_id, api_token=hf_api_key, max_tokens=hf_max_tokens, tools=tools)
     
     location = user_info.get('location', 'N/A')
     distance = user_info.get('distance', 'N/A')

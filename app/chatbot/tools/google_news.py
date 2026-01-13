@@ -19,7 +19,14 @@ def get_google_news(query):
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         
-        soup = BeautifulSoup(response.content, 'xml')
+        # XML parser fallbacks
+        try:
+            soup = BeautifulSoup(response.content, "lxml-xml")
+        except Exception:
+            try:
+                soup = BeautifulSoup(response.content, "xml")
+            except Exception:
+                soup = BeautifulSoup(response.content, "html.parser")
         items = soup.find_all('item')[:5]  # Get top 5 items
         
         if not items:
