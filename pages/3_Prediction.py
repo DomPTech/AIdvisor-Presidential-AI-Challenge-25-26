@@ -47,4 +47,4 @@ if st.session_state.scan_results:
     st.dataframe(df[display_cols] if display_cols else df, use_container_width=True)
     
     if st.button("🗺️ View on Map"):
-        st.switch_page("main.py")
+        st.switch_page("Main.py")

@@ -19,14 +19,16 @@ try:
         user_id = user.id
         user_info = {"points": 0, "history": []}  # Custom data not stored in auth; set defaults
         
+        first_name_default = ''
+        last_name_default = ''
+        bio_default = ''
+
         # Fetch profile data
-        profile_response = conn.table("profiles").select("first_name, last_name").eq("id", user_id).execute()
+        profile_response = conn.table("profiles").select("first_name, last_name", "bio").eq("id", user_id).execute()
         if profile_response.data:
             first_name_default = profile_response.data[0].get('first_name', '')
             last_name_default = profile_response.data[0].get('last_name', '')
-        else:
-            first_name_default = ''
-            last_name_default = ''
+            bio_default = profile_response.data[0].get('bio', '')
     else:
         st.error("User not authenticated, please log in.")
         st.stop()
@@ -41,6 +43,7 @@ st.write(f"Total Points: {user_info.get('points', 0)}")
 with st.form("update_profile_form"):
     first_name = st.text_input("First Name", value=first_name_default)
     last_name = st.text_input("Last Name", value=last_name_default)
+    bio = st.text_area("Bio", value=bio_default)
     submit_button = st.form_submit_button("Update Profile")
     
 if submit_button: 
@@ -48,7 +51,8 @@ if submit_button:
         # Data to update
         updates = {
             "first_name": first_name,
-            "last_name": last_name
+            "last_name": last_name,
+            "bio": bio
         }
         
         # Execute the update
