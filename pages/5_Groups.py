@@ -20,7 +20,7 @@ except Exception as e:
     conn = None
 
 data = load_data()
-tab1, tab2, tab3 = st.tabs(["Public Chat", "Direct Messages", "🏆 Leaderboard"])
+tab1, tab2, tab3 = st.tabs(["Public Chat", "Direct Messages", "Leaderboard"])
 
 with tab1:
     if not st.session_state.get("logged_in"):
@@ -76,12 +76,12 @@ with tab2:
             all_users = []
             if conn:
                 try:
-                    user_res = conn.table("profiles").select("id, username").execute()
+                    user_res = conn.table("profiles").select("id, first_name").execute()
                     all_users = user_res.data
                 except:
-                    all_users = [{"id": k, "username": k} for k in data["users"].keys()]
+                    all_users = [{"id": k, "first_name": k} for k in data["users"].keys()]
 
-            user_options = {u["username"]: u["id"] for u in all_users if u["id"] != me_id}
+            user_options = {u["first_name"]: u["id"] for u in all_users if u["id"] != me_id}
             recipient_name = st.selectbox("Search and Select User:", options=list(user_options.keys()))
             recipient_id = user_options.get(recipient_name)
 
@@ -93,8 +93,8 @@ with tab2:
                     if conn:
                         try:
                             res = conn.table("direct_messages").select("*").or_(
-                                f"and(sender_id.eq.{me_id},receiver_id.eq.{target_id}),"
-                                f"and(sender_id.eq.{target_id},receiver_id.eq.{me_id})"
+                                f"and(sender_id.eq.{me_id},recipient_id.eq.{target_id}),"
+                                f"and(sender_id.eq.{target_id},recipient_id.eq.{me_id})"
                             ).order("created_at", desc=False).execute()
                             dm_messages = res.data
                         except Exception as e:
@@ -114,7 +114,7 @@ with tab2:
                         try:
                             conn.table("direct_messages").insert({
                                 "sender_id": me_id,
-                                "receiver_id": recipient_id,
+                                "recipient_id": recipient_id,
                                 "message_text": dm_text
                             }).execute()
                             st.rerun()
