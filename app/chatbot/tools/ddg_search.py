@@ -1,4 +1,4 @@
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 def get_search(query: str) -> str:
     """
