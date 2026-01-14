@@ -52,7 +52,7 @@ with tab1:
 
             current_user_id = st.session_state.get("user_id")
 
-            with st.container(height=500):
+            with st.container(height=400):
                 for m in messages:
                     msg_user_id = m.get("user_id")
                     text = m.get("message_text", "")
@@ -65,7 +65,7 @@ with tab1:
                     else:
                         prefix = "You" if is_me else f"User {msg_user_id[:6] if msg_user_id else 'Unknown'}"
 
-                    with st.chat_message("user" if is_me else "assistant"):
+                    with st.chat_message("🧑‍💻" if is_me else "🙋"):
                         st.markdown(f"**{prefix}**: {text}")
 
         show_messages()
@@ -126,7 +126,7 @@ with tab2:
                         except Exception as e:
                             st.error(f"Error loading messages: {e}")
 
-                    with st.container(height=500):
+                    with st.container(height=400):
                         for msg in dm_messages:
                             sender_id = msg["sender_id"]
                             is_me = sender_id == me_id
@@ -135,7 +135,7 @@ with tab2:
                                 prefix = "You" if is_me else sender_name
                             else:
                                 prefix = "You" if is_me else f"User {sender_id[:6]}"
-                            with st.chat_message("user" if is_me else "assistant"):
+                            with st.chat_message("🧑‍💻" if is_me else "🙋"):
                                 st.write(f"**{prefix}**: {msg['message_text']}")
 
 
