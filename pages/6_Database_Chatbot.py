@@ -74,6 +74,9 @@ if mode == "Heuristics":
                     st.write(f"**Distance:** {dist:.2f} km away")
                     st.write(f"**FIPS:** {fips_code}")
                     st.write(f"**Bio:** {user.get('bio', 'No bio provided.')}")  
+                    
+                    if st.button("Contact", key=f"contact_{user['id']}"):
+                        st.switch_page("pages/5_Groups.py", query_params={"dm_id": user['id']})
                             
     st.info("Heuristics mode is coming soon. Check back later!")
 

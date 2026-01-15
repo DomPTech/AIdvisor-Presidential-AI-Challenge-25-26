@@ -32,7 +32,10 @@ if conn:
     except Exception as e:
         st.error(f"Error fetching profiles: {e}")
 
-tab1, tab2, tab3 = st.tabs(["Public Chat", "Direct Messages", "Leaderboard"])
+query_params = st.query_params
+dm_id = query_params.get("dm_id", None)
+
+tab1, tab2, tab3 = st.tabs(["Public Chat", "Direct Messages", "Leaderboard"], default="Public Chat" if not dm_id else "Direct Messages")
 
 with tab1:
     if not st.session_state.get("logged_in"):
@@ -99,6 +102,7 @@ with tab2:
                     all_users = [{"id": k, "first_name": k, "last_name": ""} for k in data["users"].keys()]
 
             user_options = {}
+            id_to_user = {}
             for u in all_users:
                 if u["id"] != me_id:
                     fn = u.get('first_name', '')
@@ -108,7 +112,21 @@ with tab2:
                         user_options[full] = u["id"]
                     else:
                         user_options[u["id"]] = u["id"]
-            recipient_name = st.selectbox("Find User to DM:", options=list(user_options.keys()), index=None, placeholder="Search/Select a user...")
+                    id_to_user[u["id"]] = full if full else u["id"]
+            
+            default_name = None            
+            if dm_id:
+                print("DM ID:", dm_id)
+                recipient_id = dm_id[0]
+                for name, uid in user_options.items():
+                    if uid == recipient_id:
+                        default_name = name
+                        break
+                    
+            index = list(id_to_user.keys()).index(dm_id) if dm_id else None
+            print(index)
+                    
+            recipient_name = st.selectbox("Find User to DM:", options=list(user_options.keys()), index=index, placeholder="Search/Select a user...")
             recipient_id = user_options.get(recipient_name)
 
         with col_chat:
