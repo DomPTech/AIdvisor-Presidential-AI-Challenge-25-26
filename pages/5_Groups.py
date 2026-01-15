@@ -108,7 +108,7 @@ with tab2:
                         user_options[full] = u["id"]
                     else:
                         user_options[u["id"]] = u["id"]
-            recipient_name = st.selectbox("Search and Select User:", options=list(user_options.keys()))
+            recipient_name = st.selectbox("Find User to DM:", options=list(user_options.keys()), index=None, placeholder="Search/Select a user...")
             recipient_id = user_options.get(recipient_name)
 
         with col_chat:

@@ -2,6 +2,17 @@ import streamlit as st
 import json
 from openai import OpenAI
 from st_supabase_connection import SupabaseConnection
+import wgpu
+import wgpu.utils
+
+web_gpu_available = True
+try:
+    # Get default adapter (might be software)
+    adapter = wgpu.utils.get_default_device().adapter
+    print(f"WebGPU Adapter Found: {adapter.info['name']}")
+except Exception as e:
+    print(f"WebGPU not available via wgpu-py: {e}")
+    web_gpu_available = False
 
 st.set_page_config(page_title="Flooding Coordination - Database Chatbot", layout="wide")
 
@@ -16,133 +27,18 @@ st.title("💾 Database Chatbot")
 # Sidebar Configuration
 with st.sidebar:
     st.header("Configuration")
-    mode = st.radio("Execution Mode", ["Cloud (API)", "Local (WebGPU)"], index=0)
+    mode = st.radio("Execution Mode", ["Heuristics", "Local (WebGPU)"], index=0)
     
-    if mode == "Cloud (API)":
-        st.info("Cloud Mode: Uses server-side Python and requires an API Key.")
-        st.session_state.hf_api_key = st.text_input("HuggingFace API Key", 
-                                                    value=st.session_state.hf_api_key, 
-                                                    type="password",
-                                                    key="db_chat_api_key")
-        if not st.session_state.hf_api_key:
-            st.warning("Please enter your Hugging Face API Key to use Cloud Mode.")
+    if mode == "Heuristics":
+        st.info("Heuristics Mode: Coming soon.")
     else:
         st.info("Local Mode: Runs entirely in your browser using WebGPU. Privacy-focused and free.")
         st.warning("Requires a high-performance GPU and a compatible browser (e.g., Chrome/Edge 113+).")
 
 
-# --- CLOUD MODE IMPLEMENTATION ---
-if mode == "Cloud (API)":
-    # Supabase Connection
-    try:
-        conn = st.connection("supabase", type=SupabaseConnection)
-    except Exception as e:
-        st.error(f"Failed to connect to Supabase: {e}")
-        st.stop()
-
-    def query_database(query: str):
-        """
-        Executes a read-only SQL query on the Supabase database using the 'exec_sql' RPC function.
-        """
-        try:
-            # Basic client-side safety check (the RPC function should also have checks)
-            if not query.strip().lower().startswith("select"):
-                 return "Error: Only SELECT queries are allowed for safety."
-            
-            response = conn.query("*", ttl=0).rpc("exec_sql", {"query": query}).execute()
-            return json.dumps(response.data, indent=2)
-        except Exception as e:
-            return f"Error executing query: {str(e)}"
-
-    class DatabaseAgent:
-        def __init__(self, api_key):
-             self.client = OpenAI(
-                base_url="https://router.huggingface.co/v1",
-                api_key=api_key
-            )
-             self.model_id = "deepseek-ai/DeepSeek-R1" # Hardcoded for now, could be dynamic
-
-        def get_response(self, user_input, history):
-            tools = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "query_database",
-                        "description": "Execute a SQL query to retrieve data from the database. The database has tables: 'profiles' (id, first_name, last_name, role), 'messages' (id, user_id, message_text, created_at), 'direct_messages' (id, sender_id, recipient_id, message_text, created_at).",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "query": {
-                                    "type": "string",
-                                    "description": "The SQL SELECT query to execute."
-                                }
-                            },
-                            "required": ["query"]
-                        }
-                    }
-                }
-            ]
-
-            messages = [{"role": "system", "content": "You are a database assistant. Use the 'query_database' tool to answer user questions about the data. Always output valid SQL."}]
-            messages.extend(history)
-            messages.append({"role": "user", "content": user_input})
-
-            try:
-                completion = self.client.chat.completions.create(
-                    model=self.model_id,
-                    messages=messages,
-                    tools=tools,
-                    tool_choice="auto",
-                    max_tokens=600
-                )
-                
-                msg = completion.choices[0].message
-                
-                if msg.tool_calls:
-                    messages.append(msg) # Add tool call to history
-                    for tool_call in msg.tool_calls:
-                         if tool_call.function.name == "query_database":
-                            args = json.loads(tool_call.function.arguments)
-                            result = query_database(args["query"])
-                            messages.append({
-                                "role": "tool",
-                                "tool_call_id": tool_call.id,
-                                "name": "query_database",
-                                "content": result
-                            })
-                    
-                    # Get final response
-                    final = self.client.chat.completions.create(
-                        model=self.model_id,
-                        messages=messages,
-                        max_tokens=600
-                    )
-                    return final.choices[0].message.content
-                
-                return msg.content
-
-            except Exception as e:
-                return f"Error: {str(e)}"
-
-    # Chat UI
-    for msg in st.session_state.messages_db:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    if prompt := st.chat_input("Ask about the database..."):
-        if not st.session_state.hf_api_key:
-            st.error("Please provide an API Key in the sidebar.")
-        else:
-            st.chat_message("user").markdown(prompt)
-            st.session_state.messages_db.append({"role": "user", "content": prompt})
-
-            with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
-                    agent = DatabaseAgent(st.session_state.hf_api_key)
-                    response = agent.get_response(prompt, st.session_state.messages_db[:-1])
-                    st.markdown(response)
-            
-            st.session_state.messages_db.append({"role": "assistant", "content": response})
+# --- HEURISTICS MODE IMPLEMENTATION ---
+if mode == "Heuristics":
+    st.info("Heuristics mode is coming soon. Check back later!")
 
 
 # --- LOCAL MODE IMPLEMENTATION ---
@@ -153,6 +49,10 @@ else: # mode == "Local (WebGPU)"
         sb_key = st.secrets["connections"]["supabase"]["SUPABASE_KEY"]
     except Exception as e:
         st.error(f"Supabase secrets not found or invalid structure: {e}. Please check .streamlit/secrets.toml")
+        st.stop()
+        
+    if not web_gpu_available:
+        st.text("⚠️ WebGPU is not available on this system via wgpu-py. Please ensure you are using a compatible browser and have a suitable GPU.")
         st.stop()
         
     # We define the HTML/JS component here.
@@ -192,7 +92,7 @@ else: # mode == "Local (WebGPU)"
             // System Prompt with Schema
             const SYSTEM_PROMPT = `You are a helpful database assistant.
             You have access to a database with the following tables:
-            1. profiles (id, first_name, last_name, location, resource_needed, status, bio, created_at)
+            1. profiles (id, first_name, last_name, location, needs, skills, bio, created_at)
 
             When a user asks a question, if you need data from the database, you must generate a SQL query.
             IMPORTANT: You can only strictly execute SELECT statements.

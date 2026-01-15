@@ -1,10 +1,23 @@
 import streamlit as st
 from app.common import get_badge
 from st_supabase_connection import SupabaseConnection
+import csv
 
 conn = st.connection("supabase", type=SupabaseConnection)
 
 st.set_page_config(page_title="Flooding Coordination - Profile", layout="wide")
+
+@st.cache_data
+def get_county_lookup():
+    f_to_c = {}
+    with open("data/gis/us_county_latlng_with_state.csv", mode='r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            f_to_c[row['fips_code'].strip()] = f"{row['name']} County, {row['state']}"
+    return f_to_c
+
+fips_to_county = get_county_lookup()
+fips_list = list(fips_to_county.keys())
 
 with st.sidebar:
     st.session_state.hf_api_key = st.text_input("HuggingFace API Key", value=st.session_state.hf_api_key,
@@ -21,14 +34,21 @@ try:
         
         first_name_default = ''
         last_name_default = ''
+        location_default = ''
         bio_default = ''
 
         # Fetch profile data
-        profile_response = conn.table("profiles").select("first_name, last_name", "bio").eq("id", user_id).execute()
+        profile_response = conn.table("profiles").select("*").eq("id", user_id).execute()
         if profile_response.data:
             first_name_default = profile_response.data[0].get('first_name', '')
             last_name_default = profile_response.data[0].get('last_name', '')
+            location_default = profile_response.data[0].get('fips_code', '')
             bio_default = profile_response.data[0].get('bio', '')
+            
+            try:
+                default_idx = fips_list.index(location_default)
+            except ValueError:
+                default_idx = 0
     else:
         st.error("User not authenticated, please log in.")
         st.stop()
@@ -41,8 +61,18 @@ st.subheader(f"Badge: {get_badge(user_email)}")
 st.write(f"Total Points: {user_info.get('points', 0)}")
 
 with st.form("update_profile_form"):
-    first_name = st.text_input("First Name", value=first_name_default)
-    last_name = st.text_input("Last Name", value=last_name_default)
+    col1, col2 = st.columns(2)
+    with col1:
+        first_name = st.text_input("First Name", value=first_name_default)
+    with col2:
+        last_name = st.text_input("Last Name", value=last_name_default)
+        
+    location = st.selectbox(
+        "County",
+        options=fips_list,
+        format_func=lambda x: fips_to_county.get(x, "Select a County"),
+        index=default_idx
+    )
     bio = st.text_area("Bio", value=bio_default)
     submit_button = st.form_submit_button("Update Profile")
     
@@ -52,7 +82,8 @@ if submit_button:
         updates = {
             "first_name": first_name,
             "last_name": last_name,
-            "bio": bio
+            "bio": bio,
+            "fips_code": location,
         }
         
         # Execute the update
