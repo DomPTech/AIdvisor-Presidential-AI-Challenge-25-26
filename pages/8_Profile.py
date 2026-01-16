@@ -123,6 +123,7 @@ if submit_button:
         
 st.divider()
 st.subheader("Manage My Bounties")
+st.caption("Bounties You've Posted")
 
 @st.dialog("Edit Bounty")
 def edit_bounty_dialog(bounty):
@@ -207,7 +208,7 @@ try:
         st.info("You haven't posted any help requests.")
     else:
         for b in my_bounties.data:
-            with st.expander(f"**{b['disaster_type']}** • Posted {b['created_at'][:10]} • Urgency: {b.get('urgency', 5)}/10", expanded=True):
+            with st.expander(f"**{b['disaster_type']}** • Posted {b['created_at'][:10]} • Urgency: {b.get('urgency', 5)}/10", expanded=False):
                 col1, col2 = st.columns([5, 1])
                 with col1:
                     st.write(b['content'])
@@ -297,6 +298,64 @@ try:
 
 except Exception as e:
     st.error(f"Error fetching bounties: {e}")
+
+st.caption("Bounties You're Volunteering For")
+
+try:
+    # Fetch all bounties and filter for ones user is volunteering on
+    all_bounties = conn.table("help_requests").select("*").order("created_at", desc=True).execute()
+    volunteer_bounties = [b for b in all_bounties.data if user_id in (b.get('current_volunteers') or [])]
+    
+    if not volunteer_bounties:
+        st.info("You're not currently volunteering for any bounties.")
+    else:
+        for b in volunteer_bounties:
+            with st.expander(f"**{b['disaster_type']}** • Urgency: {b.get('urgency', 5)}/10 • Posted by {get_user_name(b.get('poster_id', 'Unknown')[:36])}", expanded=False):
+                col1, col2 = st.columns([5, 1])
+                with col1:
+                    st.write(b['content'])
+                    st.caption(f"📍 Location: {b['lat']}, {b['long']}")
+                with col2:
+                    if st.button("Leave", key=f"leave_vol_{b['id']}", use_container_width=True, type="primary"):
+                        # Remove user from current_volunteers
+                        current_vols = b.get('current_volunteers', []) or []
+                        new_volunteers = [v for v in current_vols if v != user_id]
+                        conn.table("help_requests").update({
+                            "current_volunteers": new_volunteers
+                        }).eq("id", b['id']).execute()
+                        st.success("Left bounty!")
+                        st.rerun()
+except Exception as e:
+    st.error(f"Error fetching volunteer bounties: {e}")
+
+st.caption("Bounties You're Applying For")
+
+try:
+    # Fetch all bounties and filter for ones user is applying for
+    all_bounties = conn.table("help_requests").select("*").order("created_at", desc=True).execute()
+    applying_bounties = [b for b in all_bounties.data if user_id in (b.get('applicants') or [])]
+    
+    if not applying_bounties:
+        st.info("You haven't applied for any bounties yet.")
+    else:
+        for b in applying_bounties:
+            with st.expander(f"**{b['disaster_type']}** • Urgency: {b.get('urgency', 5)}/10 • Posted by {get_user_name(b.get('poster_id', 'Unknown')[:36])}", expanded=False):
+                col1, col2 = st.columns([5, 1])
+                with col1:
+                    st.write(b['content'])
+                    st.caption(f"📍 Location: {b['lat']}, {b['long']}")
+                with col2:
+                    if st.button("Withdraw", key=f"withdraw_app_{b['id']}", use_container_width=True, type="secondary"):
+                        # Remove user from applicants
+                        applicants = b.get('applicants', []) or []
+                        new_applicants = [a for a in applicants if a != user_id]
+                        conn.table("help_requests").update({
+                            "applicants": new_applicants
+                        }).eq("id", b['id']).execute()
+                        st.success("Application withdrawn!")
+                        st.rerun()
+except Exception as e:
+    st.error(f"Error fetching applying bounties: {e}")
 
 st.divider()
 st.subheader("Settings")
