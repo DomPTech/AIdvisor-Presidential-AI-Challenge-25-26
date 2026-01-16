@@ -25,7 +25,7 @@ def load_bounties():
     if not conn:
         return []
     try:
-        response = conn.table("help_requests").select("*").order("created_at", desc=True).execute()
+        response = conn.table("help_requests").select("*").neq("poster_id", st.session_state.get("user_id")).order("created_at", desc=True).execute()
         return response.data
     except Exception as e:
         st.error(f"Error fetching bounties: {e}")
