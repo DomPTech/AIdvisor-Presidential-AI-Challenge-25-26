@@ -77,20 +77,27 @@ st.subheader(f"Badge: {get_badge(user_email)}")
 st.write(f"Total Points: {user_info.get('points', 0)}")
 
 with st.form("update_profile_form"):
+    st.markdown("**Personal Information**")
     col1, col2 = st.columns(2)
     with col1:
         first_name = st.text_input("First Name", value=first_name_default)
     with col2:
         last_name = st.text_input("Last Name", value=last_name_default)
-        
+    
+    st.markdown("**Location & Bio**")
     location = st.selectbox(
         "County",
         options=fips_list,
         format_func=lambda x: fips_to_county.get(x, "Select a County"),
         index=default_idx
     )
-    bio = st.text_area("Bio", value=bio_default)
-    submit_button = st.form_submit_button("Update Profile")
+    bio = st.text_area("Bio", value=bio_default, height=100)
+    
+    st.divider()
+    
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        submit_button = st.form_submit_button("Save Profile", use_container_width=True)
     
 if submit_button: 
     if user_id:
@@ -121,10 +128,17 @@ st.subheader("Manage My Bounties")
 def edit_bounty_dialog(bounty):
     """Dialog for editing a bounty"""
     with st.form("edit_bounty_form", clear_on_submit=True):
-        new_disaster_type = st.text_input("Disaster Type", value=bounty.get('disaster_type', ''))
-        new_urgency = st.slider("Urgency (1-10)", 1, 10, bounty.get('urgency', 5))
-        new_content = st.text_area("Content", value=bounty.get('content', ''))
+        st.markdown("**Bounty Details**")
         
+        col1, col2 = st.columns(2)
+        with col1:
+            new_disaster_type = st.text_input("Disaster Type", value=bounty.get('disaster_type', ''))
+        with col2:
+            new_urgency = st.slider("Urgency Level", 1, 10, bounty.get('urgency', 5))
+        
+        new_content = st.text_area("Description", value=bounty.get('content', ''), height=120)
+        
+        st.markdown("**Location**")
         col1, col2 = st.columns(2)
         with col1:
             new_lat = st.number_input("Latitude", value=float(bounty.get('lat', 0)), format="%.4f")
@@ -132,9 +146,11 @@ def edit_bounty_dialog(bounty):
             new_lon = st.number_input("Longitude", value=float(bounty.get('long', 0)), format="%.4f")
         
         st.divider()
-        col1, col2 = st.columns(2)
+        st.markdown("**Actions**")
+        col1, col2, col3 = st.columns([2, 1, 1])
+        
         with col1:
-            if st.form_submit_button("💾 Update Bounty"):
+            if st.form_submit_button("Save Changes", type="primary", use_container_width=True):
                 try:
                     conn.table("help_requests").update({
                         "disaster_type": new_disaster_type,
@@ -147,8 +163,13 @@ def edit_bounty_dialog(bounty):
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error updating bounty: {e}")
+        
         with col2:
-            if st.form_submit_button("🗑️ Delete Bounty"):
+            if st.form_submit_button("Cancel", use_container_width=True):
+                pass
+        
+        with col3:
+            if st.form_submit_button("Delete", use_container_width=True):
                 try:
                     conn.table("help_requests").delete().eq("id", bounty['id']).execute()
                     st.success("Bounty deleted!")
@@ -186,105 +207,126 @@ try:
         st.info("You haven't posted any help requests.")
     else:
         for b in my_bounties.data:
-            with st.expander(f"{b['disaster_type']} - Posted {b['created_at'][:10]}", expanded=True):
-                st.write(b['content'])
+            with st.expander(f"**{b['disaster_type']}** • Posted {b['created_at'][:10]} • Urgency: {b.get('urgency', 5)}/10", expanded=True):
+                col1, col2 = st.columns([5, 1])
+                with col1:
+                    st.write(b['content'])
+                with col2:
+                    if st.button("Edit", icon=":material/settings:", key=f"edit_{b['id']}", use_container_width=True):
+                        edit_bounty_dialog(b)
                 
                 applicants = b.get('applicants', []) or []
                 current_vols = b.get('current_volunteers', []) or []
                 
-                st.caption(f"Current Volunteers: {len(current_vols)}")
+                st.caption(f"**{len(current_vols)}** volunteer(s) currently assigned")
                 
-                # Edit button
-                if st.button("✏️ Edit Bounty", key=f"edit_{b['id']}"):
-                    edit_bounty_dialog(b)
-                
+                # Edit button - Primary action
                 st.divider()
+                col1, col2 = st.columns([1, 4])
                 
-                if not applicants:
-                    st.caption("No pending applicants.")
-                else:
-                    st.write("**Pending Applicants:**")
+                # Pending applicants section
+                if applicants:
+                    st.markdown("**Pending Applicants**")
                     for app_id in applicants:
                         applicant_name = get_user_name(app_id)
                         c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
-                        c1.write(f"👤 {applicant_name}")
+                        with c1:
+                            st.write(f"👤 {applicant_name}")
                         
-                        if c2.button("✅ Accept", key=f"acc_{b['id']}_{app_id}"):
-                            new_applicants = [x for x in applicants if x != app_id]
-                            if app_id not in current_vols:
-                                new_volunteers = current_vols + [app_id]
-                            else:
-                                new_volunteers = current_vols
-                            
-                            conn.table("help_requests").update({
-                                "applicants": new_applicants, 
-                                "current_volunteers": new_volunteers
-                            }).eq("id", b['id']).execute()
-                            st.rerun()
-                            
-                        if c3.button("❌ Reject", key=f"rej_{b['id']}_{app_id}"):
-                            new_applicants = [x for x in applicants if x != app_id]
-                            conn.table("help_requests").update({
-                                "applicants": new_applicants
-                            }).eq("id", b['id']).execute()
-                            st.rerun()
+                        with c2:
+                            if st.button("Accept", key=f"acc_{b['id']}_{app_id}", use_container_width=True):
+                                new_applicants = [x for x in applicants if x != app_id]
+                                if app_id not in current_vols:
+                                    new_volunteers = current_vols + [app_id]
+                                else:
+                                    new_volunteers = current_vols
+                                
+                                conn.table("help_requests").update({
+                                    "applicants": new_applicants, 
+                                    "current_volunteers": new_volunteers
+                                }).eq("id", b['id']).execute()
+                                st.rerun()
                         
-                        if c4.button("💬 DM", key=f"dm_{b['id']}_{app_id}"):
-                            st.switch_page("pages/5_Groups.py", query_params={"dm_id": vol_id})
+                        with c3:
+                            if st.button("Reject", key=f"rej_{b['id']}_{app_id}", use_container_width=True):
+                                new_applicants = [x for x in applicants if x != app_id]
+                                conn.table("help_requests").update({
+                                    "applicants": new_applicants
+                                }).eq("id", b['id']).execute()
+                                st.rerun()
+                        
+                        with c4:
+                            if st.button("Message", key=f"dm_{b['id']}_{app_id}", use_container_width=True):
+                                st.switch_page("pages/5_Groups.py", query_params={"dm_id": app_id})
+                else:
+                    st.caption("No pending applicants.")
                 
+                # Current volunteers section
                 if current_vols:
                     st.divider()
-                    st.write("**Current Volunteers:**")
+                    st.markdown("**Current Volunteers**")
                     for vol_id in current_vols:
                         volunteer_name = get_user_name(vol_id)
-                        c1, c2, c3 = st.columns([2.5, 1, 1])
-                        c1.write(f"👤 {volunteer_name}")
+                        c1, c2, c3 = st.columns([3, 1, 1])
+                        with c1:
+                            st.write(f"👤 {volunteer_name}")
                         
-                        if c2.button("💬 DM", key=f"dm_vol_{b['id']}_{vol_id}"):
-                            st.switch_page("pages/5_Groups.py", query_params={"dm_id": vol_id})
+                        with c2:
+                            if st.button("Message", key=f"dm_vol_{b['id']}_{vol_id}", use_container_width=True):
+                                st.switch_page("pages/5_Groups.py", query_params={"dm_id": vol_id})
                         
-                        if c3.button("👢 Kick", key=f"kick_{b['id']}_{vol_id}"):
-                            @st.dialog("Confirm Removal")
-                            def confirm_kick():
-                                st.write(f"Are you sure you want to remove **{volunteer_name}** from this bounty?")
-                                col1, col2 = st.columns(2)
-                                with col1:
-                                    if st.button("✓ Confirm", key=f"confirm_kick_{b['id']}_{vol_id}"):
-                                        new_volunteers = [x for x in current_vols if x != vol_id]
-                                        conn.table("help_requests").update({
-                                            "current_volunteers": new_volunteers
-                                        }).eq("id", b['id']).execute()
-                                        st.success(f"{volunteer_name} has been removed!")
-                                        st.rerun()
-                                with col2:
-                                    if st.button("✗ Cancel", key=f"cancel_kick_{b['id']}_{vol_id}"):
-                                        st.info("Cancelled")
-                            
-                            confirm_kick()
+                        with c3:
+                            if st.button("Remove", type="primary", key=f"kick_{b['id']}_{vol_id}", use_container_width=True):
+                                @st.dialog("Confirm Removal")
+                                def confirm_kick():
+                                    st.write(f"Are you sure you want to remove **{volunteer_name}** from this bounty?")
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        if st.button("Confirm", key=f"confirm_kick_{b['id']}_{vol_id}", use_container_width=True):
+                                            new_volunteers = [x for x in current_vols if x != vol_id]
+                                            conn.table("help_requests").update({
+                                                "current_volunteers": new_volunteers
+                                            }).eq("id", b['id']).execute()
+                                            st.success(f"{volunteer_name} has been removed!")
+                                            st.rerun()
+                                    with col2:
+                                        if st.button("Cancel", key=f"cancel_kick_{b['id']}_{vol_id}", use_container_width=True):
+                                            st.info("Cancelled")
+                                
+                                confirm_kick()
 
 except Exception as e:
     st.error(f"Error fetching bounties: {e}")
 
 st.divider()
 st.subheader("Settings")
+
+# Password section
 with st.expander("🔐 Change Password"):
     new_pw = st.text_input("New Password", type="password", key="new_pw")
-    confirm_pw = st.text_input("Confirm New Password", type="password", key="confirm_pw")
-    if st.button("Update Password"):
-        if new_pw and new_pw == confirm_pw:
-            try:
-                response = conn.auth.update_user({"password": new_pw})
-                st.success("Password updated successfully!")
-            except Exception as e:
-                st.error(f"Error updating password: {str(e)}")
-        else:
-            st.error("Passwords do not match or field is empty.")
+    confirm_pw = st.text_input("Confirm Password", type="password", key="confirm_pw")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Update Password", key="update_pw", use_container_width=True):
+            if new_pw and new_pw == confirm_pw:
+                try:
+                    response = conn.auth.update_user({"password": new_pw})
+                    st.success("Password updated successfully!")
+                except Exception as e:
+                    st.error(f"Error updating password: {str(e)}")
+            else:
+                st.error("Passwords do not match or field is empty.")
 
-if st.button("🚪 Sign Out"):
-    try:
-        conn.auth.sign_out()
-    except:
-        pass
-    st.session_state.logged_in = False
-    st.session_state.username = None
-    st.switch_page("pages/1_Login.py")
+# Sign out section
+st.divider()
+col1, col2, col3 = st.columns([1, 1, 2])
+with col1:
+    if st.button("Sign Out", key="signout", use_container_width=True):
+        try:
+            conn.auth.sign_out()
+        except:
+            pass
+        st.session_state.logged_in = False
+        st.session_state.username = None
+        st.switch_page("pages/1_Login.py")
