@@ -20,3 +20,6 @@ pydeck
 gdeltdoc
 ddgs
 st-supabase-connection
+streamlit-audiorec
+SpeechRecognition
+pydub
