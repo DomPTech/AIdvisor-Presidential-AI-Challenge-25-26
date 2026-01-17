@@ -3,7 +3,7 @@ from openai import OpenAI
 import json
 
 class DisasterAgent:
-    def __init__(self, model_id="deepseek-ai/DeepSeek-R1", api_token=None, tools=None):
+    def __init__(self, model_id="Qwen/Qwen2.5-7B-Instruct", api_token=None, tools=None):
         """
         Initialize the HuggingFace Chatbot using the OpenAI client.
         
@@ -239,10 +239,13 @@ class DisasterAgent:
                     if function_name in self.tools:
                         # Execute tool
                         tool_func = self.tools[function_name]
+                        print(f"🤖 AI calling tool: {function_name} with args: {function_args}")
                         try:
                             tool_result = tool_func(**function_args)
+                            print(f"✅ Tool {function_name} returned data.")
                         except Exception as tool_err:
                             tool_result = f"Error executing tool: {str(tool_err)}"
+                            print(f"❌ Tool {function_name} error: {tool_err}")
                         
                         # Add tool result to messages
                         messages.append({

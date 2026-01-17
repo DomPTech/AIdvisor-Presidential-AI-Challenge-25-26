@@ -13,7 +13,7 @@ def get_search(query: str) -> str:
         str: A formatted string of the top search results.
     """
     try:
-        results = DDGS().text(query=query, region="wt-wt", safesearch="off", timelimit="w", max_results=20)
+        results = DDGS().text(query=query, region="wt-wt", safesearch="off", timelimit="m", max_results=30)
         # print(results)
         if not results:
             return f"No recent results found for '{query}'."
@@ -44,7 +44,7 @@ def get_news_search(query: str) -> str:
         str: A formatted string of the top search results.
     """
     try:
-        results = DDGS().news(query=query, region="wt-wt", safesearch="off", timelimit="w", max_results=20)
+        results = DDGS().news(query=query, region="wt-wt", safesearch="off", timelimit="m", max_results=30)
         # print(results)
         if not results:
             return f"No recent results found for '{query}'."
