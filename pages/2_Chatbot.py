@@ -20,7 +20,7 @@ session_init.init_session_state()
 
 prompt = None
 
-st.title("🤖 Disaster Chatbot")
+st.title("Disaster Chatbot")
 
 user_id = st.session_state.get("user_id")
 if user_id is None:
