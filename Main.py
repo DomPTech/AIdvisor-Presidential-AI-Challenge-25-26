@@ -127,5 +127,15 @@ def main():
         save_scan_cache(st.session_state.scan_results, st.session_state.last_scan_time)
 
 
-if __name__ == "__main__":
-    main()
+pages = [
+    st.Page(main, title="Home", icon=":material/home:"),
+    st.Page("pages/1_Login.py", title="Login", icon=":material/login:"),
+    st.Page("pages/9_Bounty_Board.py", title="Bounty Board", icon=":material/assignment:"),
+    st.Page("pages/2_Chatbot.py", title="Chatbot", icon=":material/chat:"),
+    st.Page("pages/5_Groups.py", title="Groups", icon=":material/groups:"),
+    st.Page("pages/10_Audio_Recorder.py", title="Audio Recorder", icon=":material/mic:"),
+    st.Page("pages/8_Profile.py", title="Profile", icon=":material/person:"),
+]
+
+pg = st.navigation(pages)
+pg.run()
