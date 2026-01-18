@@ -1,1 +1,8 @@
 .streamlit/secrets.toml
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+/data.json
+/scan_cache.json
