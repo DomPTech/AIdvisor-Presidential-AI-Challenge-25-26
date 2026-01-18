@@ -9,11 +9,6 @@ st.set_page_config(page_title="Flooding Coordination - Groups", layout="wide")
 
 session_init.init_session_state()
 
-with st.sidebar:
-    st.session_state.hf_api_key = st.text_input("HuggingFace API Key",
-                                                value=st.session_state.get("hf_api_key", ""),
-                                                type="password")
-
 st.header("👥 Groups & Messaging")
 
 try:
@@ -43,8 +38,6 @@ tab1, tab2, tab3 = st.tabs(["Public Chat", "Direct Messages", "Leaderboard"], de
 with tab1:
     if not st.session_state.get("logged_in"):
         st.warning("You must be logged in to view and participate in the group chat.")
-        if st.button("Log In"):
-            st.switch_page("pages/1_Login.py")
     else:
         @st.fragment(run_every=2)
         def show_messages():

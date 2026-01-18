@@ -8,6 +8,7 @@ def init_session_state():
         print(error)
 
     for key, val in [('logged_in', False), ('username', None), ('messages', []),
+                    ('global_messages', []), ('global_chat_open', False),
                     ('hf_api_key', hf_key_default), ('hf_model_id', 'deepseek-ai/DeepSeek-R1'), ('scan_results', []), 
                     ('scan_index', 0), ('scan_queries', []), ('last_scan_time', None)]:
         if key not in st.session_state: st.session_state[key] = val

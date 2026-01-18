@@ -1,12 +1,18 @@
 import streamlit as st
+from streamlit_float import *
 import datetime
 import h3
 from app.chatbot.chatbot import DisasterAgent
-from app.chatbot.tools.ddg_search import get_news_search
+from app.chatbot.tools.ddg_search import get_search, get_news_search
+from app.chatbot.tools.nws_alerts import get_nws_alerts
+from app.chatbot.tools.openfema import get_fema_disaster_declarations, get_fema_assistance_data
+from app.chatbot.tools.nasa_eonet import get_nasa_eonet_events
 from app.prediction.scanner import DisasterScanner
 from app.prediction.geospatial import get_h3_location_bundles
-from app.common import load_scan_cache, save_scan_cache, create_pydeck_map
+from app.common import load_scan_cache, save_scan_cache, create_pydeck_map, sign_out
 import app.initialize as session_init
+from st_supabase_connection import SupabaseConnection
+import json
 
 def main():
     st.set_page_config(page_title="Flooding Coordination", layout="wide")
@@ -126,7 +132,6 @@ def main():
         st.session_state.last_scan_time = datetime.datetime.now()
         save_scan_cache(st.session_state.scan_results, st.session_state.last_scan_time)
 
-
 pages = [
     st.Page(main, title="Home", icon=":material/home:"),
     st.Page("pages/1_Login.py", title="Login", icon=":material/login:"),
@@ -138,4 +143,111 @@ pages = [
 ]
 
 pg = st.navigation(pages)
+
+if pg.title != "Login":
+    # Create a single-row layout with two columns: left empty, right for button
+    _, col_right = st.columns([9, 1])  # adjust ratio for spacing
+
+    with col_right:
+        if not st.session_state.get("user_id"):
+            if st.button("Login"):
+                st.switch_page("pages/1_Login.py")
+        else:
+            conn = st.connection("supabase", type=SupabaseConnection)
+            if st.button("Logout"):
+                try:
+                    conn.auth.sign_out()
+                except:
+                    pass
+                sign_out()
+
 pg.run()
+
+# Initialize chat state
+if "global_messages" not in st.session_state:
+    st.session_state.global_messages = []
+if "global_chat_open" not in st.session_state:
+    st.session_state.global_chat_open = False
+if "global_agent" not in st.session_state:
+    st.session_state.global_agent = None
+
+float_init()
+
+# Create floating chat widget container
+chat_widget_container = st.container()
+
+with chat_widget_container:
+    # Toggle button
+    if st.button("Talk with chatbot...", key="toggle_chat", use_container_width=True):
+        st.session_state.global_chat_open = not st.session_state.global_chat_open
+    
+    # Chat interface when open
+    if st.session_state.global_chat_open:
+        st.markdown("### 🤖 Disaster Assistant")
+        
+        # Chat messages container with scrollable area
+        chat_messages_container = st.container(height=400)
+        with chat_messages_container:
+            if not st.session_state.global_messages:
+                st.info("👋 Hello! I'm your disaster assistant. Ask me about current disasters, alerts, or emergency information.")
+            else:
+                for msg in st.session_state.global_messages:
+                    with st.chat_message(msg["role"]):
+                        st.markdown(msg["content"])
+        
+        # Chat input
+        user_input = st.chat_input("Ask about disasters, alerts, or emergencies...", key="global_chat_input")
+        
+        if user_input:
+            # Add user message
+            st.session_state.global_messages.append({"role": "user", "content": user_input})
+            
+            # Initialize agent if needed
+            if st.session_state.global_agent is None:
+                st.session_state.global_agent = DisasterAgent(
+                    model_id=st.session_state.hf_model_id,
+                    api_token=st.session_state.hf_api_key,
+                    tools={
+                        "get_search": get_search,
+                        "get_news_search": get_news_search,
+                        "get_nws_alerts": get_nws_alerts,
+                        "get_fema_disaster_declarations": get_fema_disaster_declarations,
+                        "get_fema_assistance_data": get_fema_assistance_data,
+                        "get_nasa_eonet_events": get_nasa_eonet_events
+                    }
+                )
+            
+            # Get response from agent
+            with st.spinner("Thinking..."):
+                response = st.session_state.global_agent.get_response(
+                    user_input,
+                    history=[
+                        {"role": m["role"], "content": m["content"]}
+                        for m in st.session_state.global_messages[:-1]
+                    ]
+                )
+            
+            # Add assistant response
+            st.session_state.global_messages.append({"role": "assistant", "content": response})
+            st.rerun()
+        
+        # Clear chat button
+        if st.button("🗑️ Clear Chat", key="clear_global_chat", use_container_width=True):
+            st.session_state.global_messages = []
+            st.session_state.global_agent = None
+            st.rerun()
+
+if st.context.theme.type == "dark":
+    bg_color = "#0E1117"
+    border_color = "#FFFFFF"
+else:
+    bg_color = "#FFFFFF"
+    border_color = "#0E1117"
+
+# Float the chat widget to bottom left
+chat_widget_container.float(
+    "bottom: 20px; right: 20px; width: 400px;"
+    f"border: 2px solid {border_color}; border-radius: 10px; padding: 15px; "
+    f"background-color: {bg_color};"
+    "box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 999;"
+)

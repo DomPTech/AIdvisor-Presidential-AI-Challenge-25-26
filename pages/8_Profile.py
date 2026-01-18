@@ -1,5 +1,5 @@
 import streamlit as st
-from app.common import get_badge
+from app.common import get_badge, sign_out
 from st_supabase_connection import SupabaseConnection
 import csv
 import app.initialize as session_init
@@ -34,10 +34,6 @@ fips_to_county = get_county_lookup()
 fips_list = list(fips_to_county.keys())
 
 session_init.init_session_state()
-
-with st.sidebar:
-    st.session_state.hf_api_key = st.text_input("HuggingFace API Key", value=st.session_state.hf_api_key,
-                                                type="password")
 
 # Load user data from Supabase auth
 try:
@@ -386,7 +382,4 @@ with col1:
             conn.auth.sign_out()
         except:
             pass
-        st.session_state.logged_in = False
-        st.session_state.username = None
-        st.session_state.user_id = None
-        st.switch_page("pages/1_Login.py")
+        sign_out()

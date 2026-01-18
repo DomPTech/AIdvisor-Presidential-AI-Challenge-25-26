@@ -25,16 +25,7 @@ st.title("🤖 Disaster Chatbot")
 user_id = st.session_state.get("user_id")
 if user_id is None:
     st.error("You must be logged in.")
-
-    if st.button("Go to login"):
-        st.switch_page("pages/1_Login.py")
     st.stop()
-
-try:
-    conn = st.connection("supabase", type=SupabaseConnection)
-except Exception as e:
-    st.error(f"Failed to connect to Supabase: {e}")
-    conn = None
 
 # Sidebar controls
 with st.sidebar:
@@ -131,6 +122,12 @@ def handle_chat(new_prompt):
 if st.session_state.messages:
     for msg in st.session_state.messages:
         render_message(msg["role"], msg["content"])
+
+try:
+    conn = st.connection("supabase", type=SupabaseConnection)
+except Exception as e:
+    st.error(f"Failed to connect to Supabase: {e}")
+    conn = None
 
 # Create a placeholder for the welcome screen
 welcome_placeholder = st.empty()
