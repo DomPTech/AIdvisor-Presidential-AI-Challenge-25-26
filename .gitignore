@@ -4,5 +4,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+data/caches/*
+
 /data.json
 /scan_cache.json

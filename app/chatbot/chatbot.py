@@ -1,15 +1,16 @@
 import os
 from openai import OpenAI
 import json
+from datetime import date
 
 class DisasterAgent:
-    def __init__(self, model_id="Qwen/Qwen2.5-7B-Instruct", api_token=None, tools=None):
+    def __init__(self, model_id="Qwen/Qwen3-8B:nscale", api_token=None, tools=None):
         """
         Initialize the HuggingFace Chatbot using the OpenAI client.
         
         Args:
             model_id (str): The HuggingFace model ID to use. 
-                            Defaults to 'deepseek-ai/DeepSeek-R1-0528'.
+                            Defaults to 'Qwen/Qwen3-8B-Instruct'.
             api_token (str): Optional HuggingFace API token.
             tools (dict): Optional dictionary of tool functions. 
                           Format: {"tool_name": function_reference}
@@ -58,6 +59,7 @@ class DisasterAgent:
             "If you do not have data from a tool for a specific inquiry about a location's needs, "
             "clearly state that you don't have that information instead of speculating or fabricating needs. "
             "Keep answers concise, structured, and helpful."
+            f"The year is {date.today().year}."
         )
         messages.append({"role": "system", "content": system_prompt})
         
