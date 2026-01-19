@@ -3,6 +3,7 @@ from app.common import get_badge, sign_out
 from st_supabase_connection import SupabaseConnection
 import csv
 import app.initialize as session_init
+import time
 
 conn = st.connection("supabase", type=SupabaseConnection)
 
@@ -56,12 +57,14 @@ try:
             last_name_default = profile_response.data[0].get('last_name', '')
             location_default = profile_response.data[0].get('fips_code', 0)
             bio_default = profile_response.data[0].get('bio', '')
+            skills_default = profile_response.data[0].get('skills', '')
             
             try:
                 default_idx = fips_list.index(str(location_default))
             except ValueError:
                 default_idx = 0
     else:
+        st.title("Profile")
         st.error("User not authenticated, please log in.")
         st.stop()
 except Exception as e:
@@ -79,6 +82,8 @@ with st.form("update_profile_form"):
         first_name = st.text_input("First Name", value=first_name_default)
     with col2:
         last_name = st.text_input("Last Name", value=last_name_default)
+    
+    skills = st.text_area("Skills", value=skills_default, placeholder="List your relevant skills (e.g., First Aid, Driving, Plumbing)", height=100)
     
     st.markdown("**Location & Bio**")
     location = st.selectbox(
@@ -102,6 +107,7 @@ if submit_button:
             "first_name": first_name,
             "last_name": last_name,
             "bio": bio,
+            "skills": skills,
             "fips_code": int(location),
         }
         
@@ -111,6 +117,8 @@ if submit_button:
         try:
             response, count = conn.table("profiles").update(updates).eq("id", user_id).execute()
             st.success("Profile updated successfully!")
+            time.sleep(2)
+            st.rerun()
         except Exception as e:
             st.error(f"An error occurred: {e}")
             
