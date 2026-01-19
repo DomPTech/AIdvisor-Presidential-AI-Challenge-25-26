@@ -2,8 +2,6 @@
 Developed by Dominick Pelaia, Levi Dunn, Eli Ferency, and Hayden Hellsten for submission to the Presidential AI Challenge
 ## Goal
 This project is designed to provide a platform to help people quickly connect to those willing to help during natural disasters and utilize AI to facilitate improved coordination and awareness of issues.
-## Goal
-This project is designed to provide a platform to help people quickly connect to those willing to help during natural disasters and utilize AI to facilitate improved coordination and awareness of issues.
 ## Project Overview
 This project is a disaster prediction and volunteering coordination portal. It integrates:
 - **UI**: Streamlit
