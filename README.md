@@ -14,8 +14,6 @@ This project is a disaster prediction and volunteering coordination portal. It i
 
 ## Current Architecture
 - `Main`(Home): Streamlit Frontend with Pydeck map that scans for areas impacted by natural disasters with BERT model
-## Current Architecture
-- `Main`(Home): Streamlit Frontend with Pydeck map that scans for areas impacted by natural disasters with BERT model
 - `pages/1_Login`: Account creation and login via Supabase
 - `app/9_Bounty Board`: Request aid, apply to help, and receive personalized recommendations
 - `pages/2_Chatbot`: Utilizes Hugging Face api key for summaries of reports and relevant natural disaster information through tool calling of API's such as NASA, FEMA, NWS, and Duck Duck Go Search
