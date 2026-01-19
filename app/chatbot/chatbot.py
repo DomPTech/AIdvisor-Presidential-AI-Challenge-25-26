@@ -4,7 +4,7 @@ import json
 from datetime import date
 
 class DisasterAgent:
-    def __init__(self, model_id="Qwen/Qwen3-8B:nscale", api_token=None, tools=None):
+    def __init__(self, model_id="deepseek/deepseek-r1-0528", api_token=None, tools=None):
         """
         Initialize the HuggingFace Chatbot using the OpenAI client.
         
@@ -34,7 +34,7 @@ class DisasterAgent:
             self.client = None
         else:
             self.client = OpenAI(
-                base_url="https://router.huggingface.co/v1",
+                base_url="https://api.novita.ai/v3/openai",
                 api_key=token,
             )
 
