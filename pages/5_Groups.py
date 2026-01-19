@@ -9,7 +9,7 @@ st.set_page_config(page_title="Flooding Coordination - Groups", layout="wide")
 
 session_init.init_session_state()
 
-st.header("👥 Groups & Messaging")
+st.title("Groups & Messaging")
 
 try:
     conn = st.connection("supabase", type=SupabaseConnection)

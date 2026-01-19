@@ -236,10 +236,10 @@ def main():
             st.warning("⚠️ Logo missing")
 
     with head_col2:  
-        st.title("DisasterAId:")
+        st.markdown("<h1><span class='title' style='color: lightblue;'>Ai</span>dvisor</h1>", unsafe_allow_html=True)
         st.header("The Future of Disaster Response")
         st.markdown(
-            "#### Connecting communities with AI-coordinated bounties to save lives, time, and taxpayer dollars."
+            "#### Connecting communities with AI-coordination to save lives, time, and money."
         )
 
     st.divider()
@@ -277,8 +277,8 @@ def main():
             )
 
     st.info(
-        "**How DisasterAId Solves It:**\n\n"
-        "Instead of turning volunteers away, DisasterAId treats relief work as **'Bounties'** and uses AI to aggregate and distill fragmented information from agencies, shelters, and community groups—so volunteers see only clear, relevant tasks with the skills, time, and instructions they need. Our matching engine then routes verified volunteers to the right bounties and keeps coordination synchronized in real time. By connecting helpers and organizations on a national platform, we reduce duplication, increase utilization, and unlock the estimated **$34.79/hr** value of every neighbor—closing the current 65% utilization gap and maximizing impact where it matters most."
+        "**How :blue-background[Aidvisor] Solves It:**\n\n"
+        "Instead of turning volunteers away, :blue-background[Aidvisor] treats relief work as **'Bounties'** and uses AI to aggregate and distill fragmented information from agencies, shelters, and community groups—so volunteers see only clear, relevant tasks with the skills, time, and instructions they need. Our matching engine then routes verified volunteers to the right bounties and keeps coordination synchronized in real time. By connecting helpers and organizations on a national platform, we reduce duplication, increase utilization, and unlock the estimated :green[$34.79/hr] value of every neighbor—closing the current :red[65%] utilization gap and maximizing impact where it matters most."
     )
     scroll_to_heatmap_widget()
     heatmap()
