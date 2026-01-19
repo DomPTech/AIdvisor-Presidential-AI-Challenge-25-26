@@ -27,3 +27,4 @@ pocketsphinx
 pandas
 plotly
 streamlit-float
+pypdf

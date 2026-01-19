@@ -2,6 +2,7 @@ import chromadb
 import os
 import glob
 from chromadb.utils import embedding_functions
+from pypdf import PdfReader
 
 # Path for persistent storage
 DB_PATH = os.path.join(os.getcwd(), "data", "chroma_db")
@@ -21,26 +22,34 @@ def get_collection():
 
 def index_documents(kb_path):
     """
-    Read markdown files from kb_path and add them to the collection.
+    Read PDF files from kb_path and add them to the collection.
     Only adds if the content has changed (using simple ID mapping).
     """
     collection = get_collection()
-    files = glob.glob(os.path.join(kb_path, "*.md"))
+    files = glob.glob(os.path.join(kb_path, "*.pdf"))
     
     documents = []
     metadatas = []
     ids = []
     
     for file_path in files:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        try:
+            reader = PdfReader(file_path)
             filename = os.path.basename(file_path)
             
-            # For simplicity, we use filename as ID. 
-            # In a production app, we might chunk larger documents.
-            documents.append(content)
-            metadatas.append({"source": filename})
-            ids.append(filename)
+            # Extract text from each page and index separately for better retrieval
+            for page_num, page in enumerate(reader.pages):
+                content = page.extract_text()
+                if content.strip():
+                    documents.append(content)
+                    metadatas.append({
+                        "source": filename,
+                        "page": page_num + 1
+                    })
+                    ids.append(f"{filename}_page_{page_num + 1}")
+        except Exception as e:
+            print(f"Error processing {file_path}: {e}")
+            continue
             
     if documents:
         # chroma handles updates if IDs already exist
@@ -49,7 +58,7 @@ def index_documents(kb_path):
             metadatas=metadatas,
             ids=ids
         )
-        return f"Indexed {len(documents)} documents."
+        return f"Indexed {len(documents)} pages from {len(files)} PDF documents."
     return "No documents found to index."
 
 def query_vector_store(query, n_results=3):
@@ -65,6 +74,8 @@ def query_vector_store(query, n_results=3):
     if results['documents'] and results['documents'][0]:
         for doc, meta in zip(results['documents'][0], results['metadatas'][0]):
             source = meta.get("source", "Unknown")
-            context_bits.append(f"--- Context from {source} ---\n{doc}")
+            page = meta.get("page")
+            source_info = f"{source} (page {page})" if page else source
+            context_bits.append(f"--- Context from {source_info} ---\n{doc}")
             
     return "\n\n".join(context_bits) if context_bits else "No relevant context found in knowledge base."
