@@ -22,11 +22,6 @@ This project is a disaster prediction and volunteering coordination portal. It i
 - `pages/5_Groups`: Global messaging, direct messaging, and leaderboards through Supabase database
 - `app/10_Audio_Recorder`: Records audio, uses PocketSphinx to transcribe audio, feeds text into a chatbot that turns data into a json that user can choose to either submit or edit a request 
 - `app/8_profile`: User profile shows skills, bio, badge, allows managing of bounties, and change password.
-- `app/9_Bounty Board`: Request aid, apply to help, and receive personalized recommendations
-- `pages/2_Chatbot`: Utilizes Hugging Face api key for summaries of reports and relevant natural disaster information through tool calling of API's such as NASA, FEMA, NWS, and Duck Duck Go Search
-- `pages/5_Groups`: Global messaging, direct messaging, and leaderboards through Supabase database
-- `app/10_Audio_Recorder`: Records audio, uses PocketSphinx to transcribe audio, feeds text into a chatbot that turns data into a json that user can choose to either submit or edit a request 
-- `app/8_profile`: User profile shows skills, bio, badge, allows managing of bounties, and change password.
 
 ## How to Run
 - Copy `secrets.toml.example` and rename to `secrets.toml` and plug in our `Supabase URL`, `API key`, and `Hugging Face API Key` (for security purposes)
