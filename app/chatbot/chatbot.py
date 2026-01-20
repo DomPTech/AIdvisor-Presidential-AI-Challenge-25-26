@@ -4,14 +4,14 @@ import json
 from datetime import date
 
 class DisasterAgent:
-    def __init__(self, model_id="deepseek/deepseek-r1-0528", api_token=None, tools=None):
+    def __init__(self, model_id="deepseek/deepseek-v3-turbo", api_token=None, tools=None):
         """
-        Initialize the HuggingFace Chatbot using the OpenAI client.
+        Initialize the Novita Chatbot using the OpenAI client.
         
         Args:
-            model_id (str): The HuggingFace model ID to use. 
+            model_id (str): The Novita model ID to use. 
                             Defaults to 'Qwen/Qwen3-8B-Instruct'.
-            api_token (str): Optional HuggingFace API token.
+            api_token (str): Novita API token.
             tools (dict): Optional dictionary of tool functions. 
                           Format: {"tool_name": function_reference}
         """
@@ -27,7 +27,7 @@ class DisasterAgent:
                 print("Warning: Could not import rag_utils. RAG tool will not be available.")
         
         # Use provided token or fall back to environment variable
-        token = api_token or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACEHUB_API_TOKEN")
+        token = api_token # or os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACEHUB_API_TOKEN")
         
         if not token:
             # We can't initialize the client properly without a token for this endpoint
@@ -53,7 +53,7 @@ class DisasterAgent:
             str|dict: The chatbot's response.
         """
         if not self.client:
-            return "Error: API Token is missing. Please provide a HuggingFace API Token."
+            return "Error: API Token is missing. Please provide a Novita API Token."
 
         # Construct messages list
         messages = []

@@ -8,7 +8,7 @@ class DisasterBountyMatcher:
         Initialize the bounty matcher.
         
         Args:
-            api_token: Hugging Face API token for the inference API
+            api_token: Novita API token for the inference API
         """
         self.agent = DisasterAgent(api_token=api_token)
     
