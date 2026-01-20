@@ -36,7 +36,7 @@ def get_supabase_conn():
 def get_chatbot():
     hf_token = st.session_state.get("hf_api_key")
     if not hf_token:
-        st.warning("HuggingFace API Token not found in `.streamlit/secrets.toml`.")
+        st.warning("Novita API Token not found in `.streamlit/secrets.toml`.")
         return None
     return DisasterAgent(api_token=hf_token)
 
@@ -126,7 +126,7 @@ If any field cannot be determined from the transcription, use reasonable default
                 
                 st.session_state.generated_bounty = bounty_data
         else:
-            st.error("Cannot generate bounty without HuggingFace API Token")
+            st.error("Cannot generate bounty without Novita API Token")
             return
     
     # Display editable form
