@@ -15,13 +15,13 @@ import app.initialize as session_init
 from st_supabase_connection import SupabaseConnection
 import json
 
+st.set_page_config(page_title="Home", layout="wide")
 float_init()
 
-def heatmap():
-    st.set_page_config(page_title="Flooding Coordination", layout="wide")
 
+def heatmap():
     session_init.init_session_state()
-    
+
     with st.sidebar:
         pass
 
@@ -30,30 +30,33 @@ def heatmap():
         cached_data = load_scan_cache()
         st.session_state.scan_results = cached_data["scan_results"]
         st.session_state.last_scan_time = cached_data["last_scan_time"]
-        
+
         # If we loaded cached data, mark scan as complete
         if st.session_state.scan_results:
-            st.session_state.scan_index = len(st.session_state.get("scan_queries", []))
-    
+            st.session_state.scan_index = len(
+                st.session_state.get("scan_queries", []))
+
     # Initialize scan_queries with cell-based queries if empty
     if not st.session_state.scan_queries:
         # Define US Bounding Box (Roughly)
         min_lat, max_lat = 24, 50
         min_lon, max_lon = -125, -66
-        us_outline = [(min_lat, min_lon), (max_lat, min_lon), (max_lat, max_lon), (min_lat, max_lon)]
+        us_outline = [(min_lat, min_lon), (max_lat, min_lon),
+                      (max_lat, max_lon), (min_lat, max_lon)]
         polygon = h3.LatLngPoly(us_outline)
         cells = h3.polygon_to_cells(polygon, 2)
-        
+
         queries = []
         # Add initial global query
-        queries.append({"type": "general", "query": "active natural disasters US major emergency"})
-        
+        queries.append(
+            {"type": "general", "query": "active natural disasters US major emergency"})
+
         # Resolve location bundles for all cells to enable targeted news searches
         with st.spinner("Resolving initial location metadata..."):
             bundles = get_h3_location_bundles(cells)
             for bundle in bundles:
                 queries.append({"type": "cell", "bundle": bundle})
-            
+
         st.session_state.scan_queries = queries
 
     st.title("Disaster Heatmap")
@@ -75,7 +78,7 @@ def heatmap():
     if st.session_state.last_scan_time:
         time_since_scan = datetime.datetime.now() - st.session_state.last_scan_time
         cache_valid = time_since_scan.total_seconds() < 1800  # 30 minutes = 1800 seconds
-        
+
         if cache_valid:
             with st.sidebar:
                 st.success("Using cached scan data")
@@ -87,35 +90,38 @@ def heatmap():
     # Automatic Background Scan (only if cache is invalid)
     if not cache_valid and st.session_state.scan_index < len(st.session_state.scan_queries):
         scanner = DisasterScanner()
-        
+
         with st.sidebar:
             st.subheader("Background Scanning...")
-            progress_bar = st.progress(st.session_state.scan_index / len(st.session_state.scan_queries))
+            progress_bar = st.progress(
+                st.session_state.scan_index / len(st.session_state.scan_queries))
             status_text = st.empty()
             if st.button("Stop Scan"):
-                st.session_state.scan_index = len(st.session_state.scan_queries)
+                st.session_state.scan_index = len(
+                    st.session_state.scan_queries)
                 st.rerun()
 
         # Starting the loop from the current index
         start_idx = st.session_state.scan_index
         for i in range(start_idx, len(st.session_state.scan_queries)):
             q_item = st.session_state.scan_queries[i]
-            
+
             # Update status
             if q_item['type'] == 'general':
                 status_text.text(f"Global: {q_item['query']}")
                 raw_news = get_news_search(q_item['query'])
-                texts = [line.strip() for line in raw_news.split("\n\n") if line.strip()]
+                texts = [line.strip()
+                         for line in raw_news.split("\n\n") if line.strip()]
                 st.session_state.scan_results.extend(scanner.scan_texts(texts))
             else:
                 status_text.text(f"Cell: {q_item['bundle']['h3']}")
                 cell_res = scanner.scan_bundle_news(q_item['bundle'])
                 if cell_res['severity'] >= 0:
                     st.session_state.scan_results.append(cell_res)
-            
+
             # Update state and progress
             st.session_state.scan_index = i + 1
-            
+
             # Update UI every 3 items to reduce lag (throttling)
             if i % 3 == 0 or (i + 1) == len(st.session_state.scan_queries):
                 # Deduplicate results
@@ -124,14 +130,17 @@ def heatmap():
                     key = r.get('cell') or r.get('text')
                     unique_res[key] = r
                 st.session_state.scan_results = list(unique_res.values())
-                
+
                 # Update map and progress bar live
                 map_container.pydeck_chart(create_pydeck_map())
-                progress_bar.progress((i + 1) / len(st.session_state.scan_queries))
+                progress_bar.progress(
+                    (i + 1) / len(st.session_state.scan_queries))
 
         status_text.success("Initial Scan Complete")
         st.session_state.last_scan_time = datetime.datetime.now()
-        save_scan_cache(st.session_state.scan_results, st.session_state.last_scan_time)
+        save_scan_cache(st.session_state.scan_results,
+                        st.session_state.last_scan_time)
+
 
 def chatbot_widget():
     # Create floating chat widget container
@@ -142,24 +151,27 @@ def chatbot_widget():
         with st.expander("Talk with chatbot..."):
             # Chat interface when open
             st.markdown("### 🤖 Disaster Assistant")
-            
+
             # Chat messages container with scrollable area
             chat_messages_container = st.container(height=400)
             with chat_messages_container:
                 if not st.session_state.global_messages:
-                    st.info("👋 Hello! I'm your disaster assistant. Ask me about current disasters, alerts, or emergency information.")
+                    st.info(
+                        "👋 Hello! I'm your disaster assistant. Ask me about current disasters, alerts, or emergency information.")
                 else:
                     for msg in st.session_state.global_messages:
                         with st.chat_message(msg["role"]):
                             st.markdown(msg["content"])
-            
+
             # Chat input
-            user_input = st.chat_input("Ask about disasters, alerts, or emergencies...", key="global_chat_input")
-            
+            user_input = st.chat_input(
+                "Ask about disasters, alerts, or emergencies...", key="global_chat_input")
+
             if user_input:
                 # Add user message
-                st.session_state.global_messages.append({"role": "user", "content": user_input})
-                
+                st.session_state.global_messages.append(
+                    {"role": "user", "content": user_input})
+
                 # Initialize agent if needed
                 if st.session_state.global_agent is None:
                     st.session_state.global_agent = DisasterAgent(
@@ -174,7 +186,7 @@ def chatbot_widget():
                             "get_nasa_eonet_events": get_nasa_eonet_events
                         }
                     )
-                
+
                 # Get response from agent
                 with st.spinner("Thinking..."):
                     response = st.session_state.global_agent.get_response(
@@ -184,11 +196,12 @@ def chatbot_widget():
                             for m in st.session_state.global_messages[:-1]
                         ]
                     )
-                
+
                 # Add assistant response
-                st.session_state.global_messages.append({"role": "assistant", "content": response})
+                st.session_state.global_messages.append(
+                    {"role": "assistant", "content": response})
                 st.rerun()
-            
+
             # Clear chat button
             if st.button("🗑️ Clear Chat", key="clear_global_chat", width="stretch"):
                 st.session_state.global_messages = []
@@ -207,25 +220,31 @@ def chatbot_widget():
         "z-index: 1000;"
     )
 
+
 def scroll_to_heatmap_widget():
     scroll_to_heatmap_container = st.container()
-    
+
     with scroll_to_heatmap_container:
         with st.container(border=True):
-            st.markdown(":material/south: **View Heatmap**")
+            st.markdown(
+                ":material/south: [**Heatmap**](#disaster-heatmap)")
+
+    if st.context.theme.type == "dark":
+        bg_color = "#0E1117"
+    else:
+        bg_color = "#FFFFFF"
 
     scroll_to_heatmap_container.float(
         "bottom: 75px; right: 20px; "
-        "width: 160px; "
+        "width: 120px; "
         "border-radius: 10px; "
-        "box-shadow: 0 4px 12px rgba(0,0,0,0.1); "
-        "transition: all 0.5s ease-in-out; "
-        "animation: bounce 2s infinite;"
+        f"background-color: {bg_color};"
     )
+
 
 def main():
     head_col1, head_col2 = st.columns([1.5, 5], vertical_alignment="center")
-    
+
     with head_col1:
         try:
             st.image("Images/Presidential_Ai_Challenge_Logo.png", width=160)
@@ -233,8 +252,9 @@ def main():
             # Fallback icon if image is missing
             st.warning("⚠️ Logo missing")
 
-    with head_col2:  
-        st.markdown("<h1><span class='title' style='color: lightblue;'>Ai</span>dvisor</h1>", unsafe_allow_html=True)
+    with head_col2:
+        st.markdown(
+            "<h1><span class='title' style='color: lightblue;'>Ai</span>dvisor</h1>", unsafe_allow_html=True)
         st.header("The Future of Disaster Response")
         st.markdown(
             "#### Connecting communities with AI-coordination to save lives, time, and money."
@@ -247,7 +267,7 @@ def main():
 
     with st.container(border=True):
         m1, m2, m3 = st.columns(3)
-        
+
         with m1:
             st.metric(
                 label="2024 Disaster Costs (US)",
@@ -256,7 +276,7 @@ def main():
                 delta_color="inverse",
                 help="Source: NOAA NCEI 2024 Billion-Dollar Disaster Report (Jan 2025 Update)"
             )
-        
+
         with m2:
             st.metric(
                 label="Value of a Volunteer Hour",
@@ -280,13 +300,16 @@ def main():
     scroll_to_heatmap_widget()
     heatmap()
 
+
 pages = [
     st.Page(main, title="Home", icon=":material/home:"),
     st.Page("pages/1_Login.py", title="Login", icon=":material/login:"),
-    st.Page("pages/2_Bounty_Board.py", title="Bounty Board", icon=":material/assignment:"),
+    st.Page("pages/2_Bounty_Board.py", title="Bounty Board",
+            icon=":material/assignment:"),
     st.Page("pages/3_Chatbot.py", title="Chatbot", icon=":material/chat:"),
     st.Page("pages/5_Groups.py", title="Groups", icon=":material/groups:"),
-    st.Page("pages/6_Audio_Recorder.py", title="Audio Recorder", icon=":material/mic:"),
+    st.Page("pages/6_Audio_Recorder.py",
+            title="Audio Recorder", icon=":material/mic:"),
     st.Page("pages/8_Profile.py", title="Profile", icon=":material/person:"),
 ]
 
